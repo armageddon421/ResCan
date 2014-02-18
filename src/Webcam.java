@@ -2,16 +2,7 @@ import java.awt.Image;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyVetoException;
-import java.util.Locale;
 
-import javax.speech.AudioException;
-import javax.speech.Central;
-import javax.speech.EngineException;
-import javax.speech.EngineStateError;
-import javax.speech.synthesis.Synthesizer;
-import javax.speech.synthesis.SynthesizerModeDesc;
-import javax.speech.synthesis.Voice;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -26,18 +17,25 @@ import org.opencv.core.Size;
 import org.opencv.highgui.VideoCapture;
 import org.opencv.imgproc.Imgproc;
 
+import com.sun.speech.freetts.Voice;
+import com.sun.speech.freetts.VoiceManager;
+
 
 public class Webcam {
 	
-	static Synthesizer	synthesizer1;
-	
 	static VideoCapture	camera;
+	static Voice		voice;
 	
 	public static void main(final String args[]) {
 		
 		System.out.println("Hello, OpenCV");
 		// Load the native library.
 		System.loadLibrary("opencv_java248");
+		
+		listAllVoices();
+		VoiceManager voiceManager = VoiceManager.getInstance();
+		voice = voiceManager.getVoice("kevin16");
+		voice.allocate();
 		
 		camera = new VideoCapture();
 		
@@ -50,52 +48,6 @@ public class Webcam {
 			System.out.println("Camera OK?");
 		}
 		
-		Voice kevinHQ = new Voice("kevin",
-				Voice.GENDER_DONT_CARE, Voice.AGE_DONT_CARE, null);
-		
-		
-		SynthesizerModeDesc generalDesc = new SynthesizerModeDesc(
-				null, // engine name
-				"general", // mode name
-				Locale.US, // locale
-				null, // running
-				null); // voice
-		
-		try {
-			synthesizer1 =
-					Central.createSynthesizer(generalDesc);
-			
-			synthesizer1.allocate();
-			
-			
-			try {
-				synthesizer1.getSynthesizerProperties().setVoice(kevinHQ);
-				synthesizer1.getSynthesizerProperties().setPitch(10);
-				synthesizer1.getSynthesizerProperties().setPitchRange(0);
-				
-			} catch (PropertyVetoException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			try {
-				synthesizer1.resume();
-			} catch (AudioException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (EngineStateError e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			synthesizer1.speakPlainText("Hello!", null);
-			
-			
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (EngineException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		
 		while (camera.isOpened()) {
 			Mat frame = new Mat();
@@ -122,6 +74,17 @@ public class Webcam {
 			 * try { Thread.sleep(10); } catch (InterruptedException e) { //
 			 * TODO Auto-generated catch block e.printStackTrace(); }
 			 */
+		}
+	}
+	
+	public static void listAllVoices() {
+		System.out.println();
+		System.out.println("All voices available:");
+		VoiceManager voiceManager = VoiceManager.getInstance();
+		Voice[] voices = voiceManager.getVoices();
+		for (int i = 0; i < voices.length; i++) {
+			System.out.println("    " + voices[i].getName()
+					+ " (" + voices[i].getDomain() + " domain)");
 		}
 	}
 	
@@ -156,6 +119,7 @@ public class Webcam {
 					if (i == 0)
 					{
 						frame.dispose();
+						voice.deallocate();
 						camera.release();
 						System.exit(0);// kill aplicacion
 					}
@@ -515,9 +479,12 @@ public class Webcam {
 						valuestring = String.format("%d%s\n", (int) resistance, unit);
 					}
 					System.out.println(valuestring);
-					if ((synthesizer1.getEngineState() & Synthesizer.QUEUE_EMPTY) > 0) {
-						synthesizer1.speakPlainText(valuestring, null);
-					}
+					// if(voice.getOutputQueue().)
+					voice.speak(valuestring);
+					// if ((synthesizer1.getEngineState() &
+					// Synthesizer.QUEUE_EMPTY) > 0) {
+					// synthesizer1.speakPlainText(valuestring, null);
+					// }
 					contfound = 0;
 				}
 			}
