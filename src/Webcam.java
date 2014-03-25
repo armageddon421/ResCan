@@ -474,9 +474,9 @@ public class Webcam {
 						resistance /= 1000;
 						unit = "meg";
 					}
-					String valuestring = String.format("%.1f%s\n", resistance, unit);
-					if (valuestring.split(",")[1].startsWith("0")) {
-						valuestring = String.format("%d%s\n", (int) resistance, unit);
+					String valuestring = String.format(Locale.US, "%.1f%s\n", resistance, unit);
+					if (valuestring.split(".")[1].startsWith("0")) {
+						valuestring = String.format(Locale.US, "%d%s\n", (int) resistance, unit);
 					}
 					System.out.println(valuestring);
 					// if(voice.getOutputQueue().)
