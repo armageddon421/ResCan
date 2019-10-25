@@ -35,7 +35,7 @@ Run:
 >javac Webcam.java
 
 Then Run
->jar cmvf META-INF/MANIFEST.MF ResCan.jar Webcam.java
+>jar cmvf META-INF/MANIFEST.MF ResCan.jar Webcam.class Webcam$1.class
 
 Exec jar
 >java -jar -ResCan.jar
