@@ -2,6 +2,8 @@ import java.awt.Image;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -14,7 +16,7 @@ import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.highgui.VideoCapture;
+import org.opencv.videoio.VideoCapture;
 import org.opencv.imgproc.Imgproc;
 
 import com.sun.speech.freetts.Voice;
@@ -22,61 +24,61 @@ import com.sun.speech.freetts.VoiceManager;
 
 
 public class Webcam {
-	
+
 	static VideoCapture	camera;
 	static Voice		voice;
-	
+
 	public static void main(final String args[]) {
-		
+
 		System.out.println("Hello, OpenCV");
 		// Load the native library.
-		System.loadLibrary("opencv_java248");
-		
+		System.loadLibrary("opencv_java411");
+
 		listAllVoices();
+		System.setProperty("freetts.voices", "com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory");
 		VoiceManager voiceManager = VoiceManager.getInstance();
 		voice = voiceManager.getVoice("kevin16");
 		voice.allocate();
-		
-		camera = new VideoCapture();
-		
-		
-		camera.open(0); // Useless
+
+		camera = new VideoCapture(0);
+
 		if (!camera.isOpened()) {
 			System.out.println("Camera Error");
-		}
+			}
 		else {
 			System.out.println("Camera OK?");
 		}
-		
-		
+
+
 		while (camera.isOpened()) {
 			Mat frame = new Mat();
-			
-			
+
+
+
 			// camera.grab();
 			// System.out.println("Frame Grabbed");
 			// camera.retrieve(frame);
 			// System.out.println("Frame Decoded");
-			
+
 			camera.read(frame);
 			Core.flip(frame, frame, -1);
-			
+
 			/*
 			 * No difference camera.release();
 			 */
-			
+
 			// System.out.println("Captured Frame Width " + frame.width());
-			
+
 			doMagic(frame);
 			showResult(toBufferedImage(frame));
-			
+
 			/*
 			 * try { Thread.sleep(10); } catch (InterruptedException e) { //
 			 * TODO Auto-generated catch block e.printStackTrace(); }
 			 */
 		}
 	}
-	
+
 	public static void listAllVoices() {
 		System.out.println();
 		System.out.println("All voices available:");
@@ -87,7 +89,7 @@ public class Webcam {
 					+ " (" + voices[i].getDomain() + " domain)");
 		}
 	}
-	
+
 	public static Image toBufferedImage(Mat m) {
 		int type = BufferedImage.TYPE_BYTE_GRAY;
 		if (m.channels() > 1) {
@@ -102,13 +104,13 @@ public class Webcam {
 		BufferedImage image = new BufferedImage(m.cols(), m.rows(), type);
 		image.getRaster().setDataElements(0, 0, m.cols(), m.rows(), b);
 		return image;
-		
+
 	}
-	
+
 	static JLabel	outLabel;
-	
+
 	public static void showResult(final Image img) {
-		
+
 		if (outLabel == null) {
 			final JFrame frame = new JFrame();
 			frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -133,26 +135,26 @@ public class Webcam {
 		else {
 			outLabel.setIcon(new ImageIcon(img));
 		}
-		
+
 	}
-	
+
 	public static Mat doMagic(final Mat image) {
-		
+
 		Imgproc.cvtColor(image, image, Imgproc.COLOR_BGR2RGB);
 		// Mat small = image.submat(image.rows()/2-100,
 		// image.rows()/2+100,image.cols()/2-200,image.cols()/2+200);
 		// Mat small = image.submat(100,image.rows()-100,50,image.cols()-50);
 		// Mat small = image;
 		Mat small = image.submat(50, image.rows() - 50, 50, image.cols() - 50);
-		
+
 		Scalar mean = Core.mean(small);
-		
+
 		// Scalar lastcolor = new Scalar(0,0,0,0);
 		int nums[] = new int[small.cols()];
 		double avgy[] = new double[small.cols()];
 		// double colors[][] = new double[small.cols()][4];
 		for (int x = 0; x < small.cols(); x += 1) {
-			
+
 			int num = 0;
 			for (int y = 0; y < small.rows(); y += 1) {
 				double res[] = small.get(y, x);
@@ -172,7 +174,7 @@ public class Webcam {
 				avgy[x] /= num;
 			}
 		}
-		
+
 		double avgnum = 0;
 		int avgnumnum = 0;
 		for (int x = 0; x < small.cols(); x += 1) {
@@ -185,23 +187,23 @@ public class Webcam {
 		int maxx = 0;
 		if (avgnumnum > 0) {
 			avgnum /= avgnumnum * 1.0;
-			
+
 			for (int x = 0; x < small.cols(); x += 1) {
 				if (nums[x] > avgnum + 15) {
 					if (minx < 0) {
 						minx = x;
 					}
 					maxx = x;
-					
+
 				}
 			}
 		}
-		
+
 		if (minx >= 0) {
 			int miny = (int) avgy[minx];
 			int maxy = (int) avgy[maxx];
-			
-			
+
+
 			int minx2 = minx - 20;
 			if (minx2 < 0) {
 				minx2 = 0;
@@ -217,75 +219,75 @@ public class Webcam {
 				maxx2 = avgy.length - 1;
 			}
 			double a = (avgy[maxx2] - avgy[minx2]) / ((maxx2) - (minx2));
-			
+
 			miny = (int) (a * (minx - minx2) + avgy[minx2]);
 			maxy = (int) (a * (maxx - maxx2) + avgy[maxx2]);
-			
+
 			// Mat tiny = small.submat(y1, y2, minx, maxx);
-			
+
 			int w = maxx - minx;
-			
+
 			if (w > 10 && a < 0.7 && a > -0.7) {
-				
+
 				for (int x = 0; x < w; x++) {
 					int y = (int) (a * x) + miny;
 					if (true) {// y>40 && y<small.rows()-40){
 						double a2 = -1.0 / a;
-						
+
 						double res[] = new double[3];
-						
+
 						int x2 = x + minx;
-						
+
 						int oy = 15;
 						int ox = (int) (oy / a2);
-						
+
 						double col1[] = small.get(y + oy, x2 + ox);
 						small.put(y + oy, x2 + ox, 0.0, 0.0, 255.0);
-						
+
 						oy = -15;
 						ox = (int) (oy / a2);
-						
+
 						double col2[] = small.get(y + oy, x2 + ox);
 						small.put(y + oy, x2 + ox, 0.0, 0.0, 255.0);
-						
+
 						oy = 25;
 						ox = (int) (oy / a2);
-						
+
 						double col3[] = small.get(y + oy, x2 + ox);
 						small.put(y + oy, x2 + ox, 0.0, 0.0, 255.0);
-						
+
 						oy = -25;
 						ox = (int) (oy / a2);
-						
+
 						double col4[] = small.get(y + oy, x2 + ox);
 						small.put(y + oy, x2 + ox, 0.0, 0.0, 255.0);
-						
+
 						if (col1 != null && col2 != null && col3 != null && col4 != null) {
 							res[0] = (col1[0] + col2[0] + col3[0] + col4[0]) / 4;
 							res[1] = (col1[1] + col2[1] + col3[1] + col4[1]) / 4;
 							res[2] = (col1[2] + col2[2] + col3[2] + col4[2]) / 4;
 							image.put(0, x, res);
 						}
-						
-						
+
+
 					}
 				}
 				Mat res = new Mat();
 				Imgproc.resize(image.submat(new Rect(0, 0, w, 1)), res, new Size(image.cols(), 50), 0, 0,
 						Imgproc.INTER_NEAREST);
 				res.copyTo(image.submat(new Rect(0, 0, res.cols(), res.rows())));
-				
+
 				detect(image, res);
-				
+
 			}
-			
-			Core.line(small, new Point(minx, miny), new Point(maxx, maxy), new Scalar(255, 0, 0), 4);
-			
+
+			Imgproc.line(small, new Point(minx, miny), new Point(maxx, maxy), new Scalar(255, 0, 0), 4);
+
 		}
-		
+
 		return image;
 	}
-	
+
 	static double	codes[][]		= { { 20, 20, 20 }, // black
 			{ 71, 53, 38 }, // brown
 			{ 105, 31, 40 }, // red
@@ -297,8 +299,8 @@ public class Webcam {
 			{ 73, 65, 62 }, // gray
 			{ 200, 200, 200 }		// white
 									};
-	
-	
+
+
 	static double	codesview[][]	= { { 0, 0, 0 }, // black
 			{ 139, 69, 19 }, // brown
 			{ 255, 0, 0 }, // red
@@ -310,7 +312,7 @@ public class Webcam {
 			{ 128, 128, 128 }, // gray
 			{ 255, 255, 255 }		// white
 									};
-	
+
 	static String	codename[]		= { "black", // black
 			"brown", // brown
 			"red", // red
@@ -322,43 +324,43 @@ public class Webcam {
 			"gray", // gray
 			"white" // white
 									};
-	
-	
+
+
 	private static double coldist(final double c1[], final double c2[]) {
 		return Math.sqrt(Math.pow(c1[0] - c2[0], 2)
 				+ Math.pow(c1[1] - c2[1], 2)
 				+ Math.pow(c1[2] - c2[2], 2));
 	}
-	
+
 	private static double coldist2(final double c1[], final double c2[]) {
 		return Math.pow(c1[0] - c2[0], 2)
 				+ Math.pow(c1[1] - c2[1], 2)
 				+ Math.pow(c1[2] - c2[2], 2);
 	}
-	
+
 	private static int	contfound	= 0;
 	private static int	lastresult[];
-	
+
 	private static void detect(final Mat image, final Mat res) {
 		double bg[] = new double[3];
-		
+
 		for (int x = res.cols() - 50; x < res.cols(); x++) {
 			double val[] = res.get(0, x);
 			for (int i = 0; i < 3; i++) {
 				bg[i] += val[i] / 50.0;
 			}
 		}
-		
+
 		double bgdists[] = new double[res.cols()];
 		double avgdist = 0;
 		for (int x = 0; x < res.cols() - 5; x++) {
 			bgdists[x] = coldist2(bg, res.get(0, x)) / 100;
 			avgdist += bgdists[x] / res.cols();
-			Core.line(image, new Point(x * image.cols() / res.cols(), bgdists[x]), new Point((x + 1) * image.cols()
+			Imgproc.line(image, new Point(x * image.cols() / res.cols(), bgdists[x]), new Point((x + 1) * image.cols()
 					/ res.cols(), bgdists[x]), new Scalar(255, 0, 0));
 		}
-		Core.line(image, new Point(0, avgdist), new Point(image.cols(), avgdist), new Scalar(0, 0, 255));
-		
+		Imgproc.line(image, new Point(0, avgdist), new Point(image.cols(), avgdist), new Scalar(0, 0, 255));
+
 		int coldet[] = new int[res.cols()];
 		for (int x = 0; x < res.cols(); x++) {
 			if (bgdists[x] > avgdist * 1.0) {
@@ -374,19 +376,19 @@ public class Webcam {
 				}
 				coldet[x] = minc;
 				if (minc >= 0) {
-					Core.rectangle(image, new Point(x * image.cols() / res.cols(), 50),
+					Imgproc.rectangle(image, new Point(x * image.cols() / res.cols(), 50),
 							new Point((x + 1) * image.cols() / res.cols(), 100), new Scalar(codes[minc]), -1);
-					Core.rectangle(image, new Point(x * image.cols() / res.cols(), 100),
+					Imgproc.rectangle(image, new Point(x * image.cols() / res.cols(), 100),
 							new Point((x + 1) * image.cols() / res.cols(), 150), new Scalar(codesview[minc]), -1);
-					
+
 				}
-				
+
 			}
 			else {
 				coldet[x] = -1;
 			}
 		}
-		
+
 		int numconti = 0;
 		int numcodes = 0;
 		int sumcodes[] = new int[res.cols()];
@@ -400,8 +402,8 @@ public class Webcam {
 				for (int i = 0; i < numconti - 20; i++) {
 					sumc[sumcodes[i]]++;
 				}
-				
-				
+
+
 				int maxnum = 0;
 				int code = -1;
 				for (int i = 0; i < codes.length; i++) {
@@ -409,17 +411,17 @@ public class Webcam {
 						maxnum = sumc[i];
 						code = i;
 					}
-					
+
 				}
 				if (code != -1) {
-					
+
 					// darstellen
-					
-					Core.line(image, new Point(x - 10, 0), new Point(x - 10, 100), new Scalar(0, 255, 0));
-					Core.rectangle(image, new Point(numcodes * image.cols() / 4, image.rows() - 50), new Point(
+
+					Imgproc.line(image, new Point(x - 10, 0), new Point(x - 10, 100), new Scalar(0, 255, 0));
+					Imgproc.rectangle(image, new Point(numcodes * image.cols() / 4, image.rows() - 50), new Point(
 							(numcodes + 1) * image.cols() / 4, image.rows()), new Scalar(codesview[code]), -1);
-					Core.putText(image, codename[code], new Point(numcodes * image.cols() / 4, image.rows() - 10),
-							Core.FONT_HERSHEY_TRIPLEX, 1.0, new Scalar(200, 200, 200));
+					Imgproc.putText(image, codename[code], new Point(numcodes * image.cols() / 4, image.rows() - 10),
+							Imgproc.FONT_HERSHEY_TRIPLEX, 1.0, new Scalar(200, 200, 200));
 					// System.out.printf("found: %d\n", code);
 					result[numcodes] = code;
 					numcodes++;
@@ -429,7 +431,7 @@ public class Webcam {
 					}
 				}
 				numconti = 0;
-				
+
 				sumcodes = new int[res.cols()];
 			}
 			else if (coldet[x] >= 0) {
@@ -439,7 +441,7 @@ public class Webcam {
 															// border
 				}
 				if (numconti == 10) {
-					Core.line(image, new Point(x, 0), new Point(x, 100), new Scalar(0, 255, 0));
+					Imgproc.line(image, new Point(x, 0), new Point(x, 100), new Scalar(0, 255, 0));
 				}
 				numconti++;
 				// System.out.printf("num: %d coldet: %d\n", numconti,
@@ -448,10 +450,10 @@ public class Webcam {
 			else {
 				numconti = 0;
 			}
-			
+
 		}
-		
-		
+
+
 		if (found) {
 			if (lastresult == null) {
 				lastresult = result;
@@ -459,11 +461,10 @@ public class Webcam {
 			if (result[0] == lastresult[0] && result[1] == lastresult[1] && result[2] == lastresult[2]) {
 				contfound++;
 				if (contfound > 10) {
-					String speak = String.format("%s %s %s\n", codename[result[0]], codename[result[1]],
-							codename[result[2]]);
+					String speak = String.format("%s %s %s\n", codename[result[0]], codename[result[1]], codename[result[2]]);
 					System.out.printf(speak);
-					
-					
+
+
 					double resistance = calcvalue(result);
 					String unit = " Ohm";
 					if (resistance >= 1000.0) {
@@ -491,7 +492,7 @@ public class Webcam {
 			else {
 				contfound -= 1;
 			}
-			
+
 			lastresult = result;
 		}
 		else {
@@ -501,14 +502,14 @@ public class Webcam {
 		if (contfound < 0) {
 			contfound = 0;
 		}
-		
+
 	}
-	
+
 	static double calcvalue(final int rings[]) {
-		
+
 		double result = rings[0] * 10 + rings[1];
 		result *= Math.pow(10, rings[2]);
-		
+
 		return result;
 	}
 }
